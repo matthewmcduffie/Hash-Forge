@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Local Secret & Hash Forge</title>
+  <style>
+    :root {
+      --bg: #0f1411;
+      --panel: #17211b;
+      --panel-2: #1f2b24;
+      --text: #e8f0ea;
+      --muted: #a9b7ad;
+      --accent: #7ccf9a;
+      --accent-2: #9be7b5;
+      --danger: #ffb4a8;
+      --border: #314238;
+      --shadow: rgba(0, 0, 0, 0.35);
+      --input: #101712;
+      --code: #0b100d;
+      --button: #26382e;
+      --button-hover: #314a3c;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background:
+        radial-gradient(circle at top left, rgba(124, 207, 154, 0.16), transparent 34rem),
+        radial-gradient(circle at bottom right, rgba(155, 231, 181, 0.10), transparent 30rem),
+        var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+    }
+
+    main {
+      width: min(1100px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 32px 0 48px;
+    }
+
+    header {
+      margin-bottom: 24px;
+      padding: 28px;
+      background: linear-gradient(145deg, rgba(23, 33, 27, 0.96), rgba(31, 43, 36, 0.9));
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      box-shadow: 0 18px 45px var(--shadow);
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: clamp(2rem, 5vw, 3.4rem);
+      letter-spacing: -0.05em;
+      line-height: 1;
+    }
+
+    h2 {
+      margin: 0 0 16px;
+      font-size: 1.25rem;
+    }
+
+    h3 {
+      margin: 18px 0 10px;
+      font-size: 1rem;
+      color: var(--accent-2);
+    }
+
+    p {
+      margin: 0 0 12px;
+      color: var(--muted);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
+    }
+
+    .card {
+      background: rgba(23, 33, 27, 0.92);
+      border: 1px solid var(--border);
+      border-radius: 22px;
+      padding: 20px;
+      box-shadow: 0 14px 34px var(--shadow);
+    }
+
+    .wide {
+      grid-column: 1 / -1;
+    }
+
+    label {
+      display: block;
+      margin: 12px 0 6px;
+      color: var(--text);
+      font-weight: 650;
+    }
+
+    input,
+    textarea,
+    select {
+      width: 100%;
+      color: var(--text);
+      background: var(--input);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 12px 13px;
+      font: inherit;
+      outline: none;
+    }
+
+    input:focus,
+    textarea:focus,
+    select:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(124, 207, 154, 0.14);
+    }
+
+    textarea {
+      min-height: 120px;
+      resize: vertical;
+    }
+
+    .row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .row > * {
+      flex: 1 1 180px;
+    }
+
+    button {
+      color: var(--text);
+      background: var(--button);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 11px 14px;
+      font: inherit;
+      font-weight: 750;
+      cursor: pointer;
+      transition: transform 0.08s ease, background 0.16s ease, border-color 0.16s ease;
+    }
+
+    button:hover {
+      background: var(--button-hover);
+      border-color: var(--accent);
+    }
+
+    button:active {
+      transform: translateY(1px);
+    }
+
+    .primary {
+      background: linear-gradient(180deg, #3f7d55, #2f6243);
+      border-color: #68bd83;
+    }
+
+    .primary:hover {
+      background: linear-gradient(180deg, #4b9264, #38744e);
+    }
+
+    .danger {
+      color: #271411;
+      background: var(--danger);
+      border-color: #ffd0c8;
+    }
+
+    .output {
+      width: 100%;
+      min-height: 52px;
+      margin-top: 10px;
+      padding: 13px;
+      border-radius: 14px;
+      background: var(--code);
+      border: 1px solid var(--border);
+      color: var(--accent-2);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+      font-size: 0.92rem;
+      overflow-wrap: anywhere;
+      white-space: pre-wrap;
+    }
+
+    .note {
+      border-left: 4px solid var(--accent);
+      background: rgba(124, 207, 154, 0.08);
+      padding: 12px 14px;
+      border-radius: 12px;
+      color: var(--muted);
+    }
+
+    .warn {
+      border-left-color: var(--danger);
+      background: rgba(255, 180, 168, 0.08);
+    }
+
+    .small {
+      font-size: 0.88rem;
+    }
+
+    .checks {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px 12px;
+      margin-top: 8px;
+    }
+
+    .check {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      color: var(--muted);
+      font-weight: 500;
+    }
+
+    .check input {
+      width: auto;
+      accent-color: var(--accent);
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin: 4px 6px 0 0;
+      padding: 7px 10px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      background: rgba(31, 43, 36, 0.8);
+      color: var(--muted);
+      font-size: 0.85rem;
+    }
+
+    .footer {
+      margin-top: 18px;
+      color: var(--muted);
+      font-size: 0.9rem;
+      text-align: center;
+    }
+
+    @media (max-width: 800px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+
+      header {
+        padding: 22px;
+      }
+
+      .checks {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <h1>Local Secret & Hash Forge</h1>
+      <p>
+        A one-file, offline-friendly page for generating strong secrets, hashing text or files, and making UUIDs.
+        Everything runs in your browser using built-in Web Crypto. Nothing is uploaded.
+      </p>
+      <span class="pill">No server</span>
+      <span class="pill">No external scripts</span>
+      <span class="pill">Works offline after opening</span>
+    </header>
+
+    <section class="grid">
+      <article class="card">
+        <h2>Generate a Strong Secret</h2>
+        <p>Use this for API keys, app secrets, session secrets, random passwords, and local test credentials.</p>
+
+        <div class="row">
+          <div>
+            <label for="secretLength">Length</label>
+            <input id="secretLength" type="number" min="8" max="512" value="64" />
+          </div>
+          <div>
+            <label for="secretFormat">Format</label>
+            <select id="secretFormat">
+              <option value="base64url">Base64URL</option>
+              <option value="hex">Hex</option>
+              <option value="password">Password style</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="checks">
+          <label class="check"><input id="useUpper" type="checkbox" checked /> Uppercase</label>
+          <label class="check"><input id="useLower" type="checkbox" checked /> Lowercase</label>
+          <label class="check"><input id="useNumbers" type="checkbox" checked /> Numbers</label>
+          <label class="check"><input id="useSymbols" type="checkbox" checked /> Symbols</label>
+        </div>
+
+        <div class="row" style="margin-top: 14px;">
+          <button class="primary" id="generateSecret">Generate Secret</button>
+          <button id="copySecret">Copy</button>
+        </div>
+
+        <div id="secretOutput" class="output" aria-live="polite"></div>
+
+        <p class="note small" style="margin-top: 12px;">
+          For most secrets, random generation is better than hashing a phrase. Random secrets have fewer habits hiding inside them.
+        </p>
+      </article>
+
+      <article class="card">
+        <h2>Hash Text</h2>
+        <p>Use hashes to fingerprint text, compare values, or create checksums. Do not use plain SHA hashes for password storage.</p>
+
+        <label for="hashText">Text to hash</label>
+        <textarea id="hashText" placeholder="Paste text here..."></textarea>
+
+        <label for="hashAlgorithm">Algorithm</label>
+        <select id="hashAlgorithm">
+          <option value="SHA-256">SHA-256</option>
+          <option value="SHA-384">SHA-384</option>
+          <option value="SHA-512">SHA-512</option>
+        </select>
+
+        <div class="row" style="margin-top: 14px;">
+          <button class="primary" id="hashTextButton">Hash Text</button>
+          <button id="copyHash">Copy</button>
+        </div>
+
+        <div id="hashOutput" class="output" aria-live="polite"></div>
+      </article>
+
+      <article class="card">
+        <h2>Hash a File</h2>
+        <p>Useful for proving a file did not change. The file is read locally in your browser.</p>
+
+        <label for="fileInput">Choose file</label>
+        <input id="fileInput" type="file" />
+
+        <label for="fileHashAlgorithm">Algorithm</label>
+        <select id="fileHashAlgorithm">
+          <option value="SHA-256">SHA-256</option>
+          <option value="SHA-384">SHA-384</option>
+          <option value="SHA-512">SHA-512</option>
+        </select>
+
+        <div class="row" style="margin-top: 14px;">
+          <button class="primary" id="hashFileButton">Hash File</button>
+          <button id="copyFileHash">Copy</button>
+        </div>
+
+        <div id="fileHashOutput" class="output" aria-live="polite"></div>
+      </article>
+
+      <article class="card">
+        <h2>UUIDs and Tokens</h2>
+        <p>Fast identifiers for records, test data, local apps, and throwaway development keys.</p>
+
+        <div class="row">
+          <button class="primary" id="uuidButton">Generate UUID v4</button>
+          <button id="copyUuid">Copy</button>
+        </div>
+        <div id="uuidOutput" class="output" aria-live="polite"></div>
+
+        <h3>Random Bytes</h3>
+        <div class="row">
+          <div>
+            <label for="byteCount">Bytes</label>
+            <input id="byteCount" type="number" min="8" max="1024" value="32" />
+          </div>
+          <div>
+            <label for="byteFormat">Format</label>
+            <select id="byteFormat">
+              <option value="hex">Hex</option>
+              <option value="base64url">Base64URL</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="row" style="margin-top: 14px;">
+          <button class="primary" id="bytesButton">Generate Bytes</button>
+          <button id="copyBytes">Copy</button>
+        </div>
+        <div id="bytesOutput" class="output" aria-live="polite"></div>
+      </article>
+
+      <article class="card wide">
+        <h2>Plain-English Usage Notes</h2>
+        <div class="note">
+          <strong>Use generated secrets</strong> for API keys, app secrets, JWT secrets, encryption keys, admin passwords, service credentials, and test tokens.
+        </div>
+        <br />
+        <div class="note">
+          <strong>Use hashes</strong> for checksums, duplicate detection, file integrity, and proving that text or files match exactly.
+        </div>
+        <br />
+        <div class="note warn">
+          <strong>Do not store user passwords as plain SHA hashes.</strong> Real password storage should use Argon2id, bcrypt, or PBKDF2 with salts and sane work factors. Browser SHA tools are good for fingerprints, not password databases.
+        </div>
+
+        <p class="footer">
+          Keep private secrets out of screenshots, chat windows, logs, Git commits, and shared drives. The old ways still win here: lock the drawer, label the keys, and do not hand copies to strangers.
+        </p>
+      </article>
+    </section>
+  </main>
+
+  <script>
+    const textEncoder = new TextEncoder();
+
+    function bytesToHex(bytes) {
+      return Array.from(bytes, b => b.toString(16).padStart(2, "0")).join("");
+    }
+
+    function bytesToBase64Url(bytes) {
+      let binary = "";
+      bytes.forEach(byte => binary += String.fromCharCode(byte));
+      return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+    }
+
+    function randomBytes(length) {
+      const bytes = new Uint8Array(length);
+      crypto.getRandomValues(bytes);
+      return bytes;
+    }
+
+    function randomFromCharset(length, charset) {
+      if (!charset) {
+        throw new Error("Choose at least one character group.");
+      }
+
+      const result = [];
+      const random = new Uint32Array(length);
+      crypto.getRandomValues(random);
+
+      for (let i = 0; i < length; i++) {
+        result.push(charset[random[i] % charset.length]);
+      }
+
+      return result.join("");
+    }
+
+    async function digestText(text, algorithm) {
+      const digest = await crypto.subtle.digest(algorithm, textEncoder.encode(text));
+      return bytesToHex(new Uint8Array(digest));
+    }
+
+    async function digestFile(file, algorithm) {
+      const buffer = await file.arrayBuffer();
+      const digest = await crypto.subtle.digest(algorithm, buffer);
+      return bytesToHex(new Uint8Array(digest));
+    }
+
+    async function copyFrom(elementId) {
+      const value = document.getElementById(elementId).textContent.trim();
+      if (!value) return;
+      await navigator.clipboard.writeText(value);
+    }
+
+    function setOutput(elementId, value) {
+      document.getElementById(elementId).textContent = value;
+    }
+
+    document.getElementById("generateSecret").addEventListener("click", () => {
+      try {
+        const length = Math.max(8, Math.min(512, Number(document.getElementById("secretLength").value) || 64));
+        const format = document.getElementById("secretFormat").value;
+
+        if (format === "hex") {
+          const byteLength = Math.ceil(length / 2);
+          setOutput("secretOutput", bytesToHex(randomBytes(byteLength)).slice(0, length));
+          return;
+        }
+
+        if (format === "base64url") {
+          const byteLength = Math.ceil(length * 0.75) + 2;
+          setOutput("secretOutput", bytesToBase64Url(randomBytes(byteLength)).slice(0, length));
+          return;
+        }
+
+        const upper = "ABCDEFGHJKLMNPQRSTUVWXYZ";
+        const lower = "abcdefghijkmnopqrstuvwxyz";
+        const numbers = "23456789";
+        const symbols = "!@#$%^&*()_+=[]{}:,.?";
+
+        let charset = "";
+        if (document.getElementById("useUpper").checked) charset += upper;
+        if (document.getElementById("useLower").checked) charset += lower;
+        if (document.getElementById("useNumbers").checked) charset += numbers;
+        if (document.getElementById("useSymbols").checked) charset += symbols;
+
+        setOutput("secretOutput", randomFromCharset(length, charset));
+      } catch (error) {
+        setOutput("secretOutput", "Error: " + error.message);
+      }
+    });
+
+    document.getElementById("hashTextButton").addEventListener("click", async () => {
+      try {
+        const text = document.getElementById("hashText").value;
+        const algorithm = document.getElementById("hashAlgorithm").value;
+        setOutput("hashOutput", await digestText(text, algorithm));
+      } catch (error) {
+        setOutput("hashOutput", "Error: " + error.message);
+      }
+    });
+
+    document.getElementById("hashFileButton").addEventListener("click", async () => {
+      try {
+        const fileInput = document.getElementById("fileInput");
+        const algorithm = document.getElementById("fileHashAlgorithm").value;
+
+        if (!fileInput.files.length) {
+          setOutput("fileHashOutput", "Choose a file first.");
+          return;
+        }
+
+        const file = fileInput.files[0];
+        const hash = await digestFile(file, algorithm);
+
+        setOutput("fileHashOutput", `${algorithm}  ${hash}\nFile: ${file.name}\nSize: ${file.size} bytes`);
+      } catch (error) {
+        setOutput("fileHashOutput", "Error: " + error.message);
+      }
+    });
+
+    document.getElementById("uuidButton").addEventListener("click", () => {
+      if (crypto.randomUUID) {
+        setOutput("uuidOutput", crypto.randomUUID());
+        return;
+      }
+
+      const bytes = randomBytes(16);
+      bytes[6] = (bytes[6] & 0x0f) | 0x40;
+      bytes[8] = (bytes[8] & 0x3f) | 0x80;
+      const hex = bytesToHex(bytes);
+      setOutput("uuidOutput", `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`);
+    });
+
+    document.getElementById("bytesButton").addEventListener("click", () => {
+      const count = Math.max(8, Math.min(1024, Number(document.getElementById("byteCount").value) || 32));
+      const format = document.getElementById("byteFormat").value;
+      const bytes = randomBytes(count);
+      setOutput("bytesOutput", format === "hex" ? bytesToHex(bytes) : bytesToBase64Url(bytes));
+    });
+
+    document.getElementById("copySecret").addEventListener("click", () => copyFrom("secretOutput"));
+    document.getElementById("copyHash").addEventListener("click", () => copyFrom("hashOutput"));
+    document.getElementById("copyFileHash").addEventListener("click", () => copyFrom("fileHashOutput"));
+    document.getElementById("copyUuid").addEventListener("click", () => copyFrom("uuidOutput"));
+    document.getElementById("copyBytes").addEventListener("click", () => copyFrom("bytesOutput"));
+
+    document.getElementById("generateSecret").click();
+    document.getElementById("uuidButton").click();
+    document.getElementById("bytesButton").click();
+  </script>
+</body>
+</html>
